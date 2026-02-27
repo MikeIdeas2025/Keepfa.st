@@ -17,6 +17,20 @@ logger = logging.getLogger(__name__)
 
 mcp = FastMCP("keepfast")
 
+SANDBOX_KEY = "sandbox"
+
+
+def _is_sandbox(posthog_api_key: str) -> bool:
+    return posthog_api_key.strip().lower() == SANDBOX_KEY
+
+
+def _sandbox_context() -> "AppContext":
+    """Build an AppContext with fake connectors and fixture data."""
+    from tests.stubs import FakePostHogConnector, FakeStripeConnector
+
+    pipeline = DataPipeline(FakePostHogConnector(), FakeStripeConnector())
+    return AppContext(pipeline, TranslationLayer())
+
 
 class AppContext:
     """Lazy-initialized shared state — cached per credential set."""
@@ -36,6 +50,9 @@ class AppContext:
         stripe_api_key: str,
         posthog_host: str,
     ) -> "AppContext":
+        if _is_sandbox(posthog_api_key):
+            return _sandbox_context()
+
         key = f"{posthog_api_key}:{posthog_project_id}:{stripe_api_key}:{posthog_host}"
         if cls._instance is None or cls._cache_key != key:
             auth = AuthManager(
