@@ -1,4 +1,4 @@
-"""Keepfa.st MCP server — 3 high-level retention analysis skills."""
+"""Keepfa.st MCP server — 8 retention analysis tools."""
 
 import logging
 
@@ -8,8 +8,12 @@ from keepfast.auth import AuthManager
 from keepfast.connectors.posthog import PostHogConnector
 from keepfast.connectors.stripe import StripeConnector
 from keepfast.intelligence.clv import CLVAnalyzer
+from keepfast.intelligence.cohort import CohortAnalyzer
+from keepfast.intelligence.funnel import FunnelAnalyzer
 from keepfast.intelligence.health import CustomerHealthAnalyzer
 from keepfast.intelligence.journey import JourneyOrchestrator
+from keepfast.intelligence.segments import SegmentAnalyzer
+from keepfast.intelligence.trends import TrendAnalyzer
 from keepfast.pipeline import DataPipeline
 from keepfast.translation.plain_language import TranslationLayer
 
@@ -26,7 +30,7 @@ def _is_sandbox(posthog_api_key: str) -> bool:
 
 def _sandbox_context() -> "AppContext":
     """Build an AppContext with fake connectors and fixture data."""
-    from tests.stubs import FakePostHogConnector, FakeStripeConnector
+    from keepfast.sandbox import FakePostHogConnector, FakeStripeConnector
 
     pipeline = DataPipeline(FakePostHogConnector(), FakeStripeConnector())
     return AppContext(pipeline, TranslationLayer())
@@ -131,6 +135,132 @@ def lucrative_loyal_strategist(
     except Exception as e:
         logger.exception("lucrative_loyal_strategist failed")
         return f"Something went wrong while calculating customer value: {e}"
+
+
+@mcp.tool()
+def get_cohort_retention(
+    posthog_api_key: str,
+    posthog_project_id: str,
+    stripe_api_key: str,
+    posthog_host: str = "https://app.posthog.com",
+    cohort_period: str = "monthly",
+    periods: int = 6,
+    language: str = "auto",
+) -> str:
+    """See how many of your users come back over time, grouped by when they signed up."""
+    try:
+        ctx = AppContext.get(posthog_api_key, posthog_project_id, stripe_api_key, posthog_host)
+        data = ctx.pipeline.fetch_and_normalize()
+        result = CohortAnalyzer().calculate_retention(
+            data.users, data.events, cohort_period, periods
+        )
+        return ctx.translator.translate("cohort", result, language)
+    except Exception as e:
+        logger.exception("get_cohort_retention failed")
+        return f"Something went wrong while analyzing cohort retention: {e}"
+
+
+@mcp.tool()
+def get_funnel_analysis(
+    posthog_api_key: str,
+    posthog_project_id: str,
+    stripe_api_key: str,
+    steps: str,
+    posthog_host: str = "https://app.posthog.com",
+    language: str = "auto",
+) -> str:
+    """Find where people drop off in a specific flow. Pass event names separated by commas."""
+    try:
+        ctx = AppContext.get(posthog_api_key, posthog_project_id, stripe_api_key, posthog_host)
+        data = ctx.pipeline.fetch_and_normalize()
+        steps_list = [s.strip() for s in steps.split(",") if s.strip()]
+        result = FunnelAnalyzer().analyze_funnel(data.events, steps_list)
+        return ctx.translator.translate("funnel", result, language)
+    except Exception as e:
+        logger.exception("get_funnel_analysis failed")
+        return f"Something went wrong while analyzing the funnel: {e}"
+
+
+@mcp.tool()
+def get_metric_trend(
+    posthog_api_key: str,
+    posthog_project_id: str,
+    stripe_api_key: str,
+    metric: str,
+    posthog_host: str = "https://app.posthog.com",
+    granularity: str = "weekly",
+    language: str = "auto",
+) -> str:
+    """Show how any metric is changing over time — growing, declining, or stable."""
+    try:
+        ctx = AppContext.get(posthog_api_key, posthog_project_id, stripe_api_key, posthog_host)
+        data = ctx.pipeline.fetch_and_normalize()
+        result = TrendAnalyzer().get_trend(
+            data.users, data.events, data.subscriptions, metric, granularity
+        )
+        return ctx.translator.translate("trend", result, language)
+    except Exception as e:
+        logger.exception("get_metric_trend failed")
+        return f"Something went wrong while analyzing the metric trend: {e}"
+
+
+@mcp.tool()
+def compare_segments(
+    posthog_api_key: str,
+    posthog_project_id: str,
+    stripe_api_key: str,
+    segment_a: str,
+    segment_b: str,
+    metric: str,
+    posthog_host: str = "https://app.posthog.com",
+    language: str = "auto",
+) -> str:
+    """Compare two groups of users on any metric. Segments: paying, free, new, returning, active, inactive."""
+    try:
+        ctx = AppContext.get(posthog_api_key, posthog_project_id, stripe_api_key, posthog_host)
+        data = ctx.pipeline.fetch_and_normalize()
+        result = SegmentAnalyzer().compare(
+            data.users, data.events, data.subscriptions, segment_a, segment_b, metric
+        )
+        return ctx.translator.translate("segment", result, language)
+    except Exception as e:
+        logger.exception("compare_segments failed")
+        return f"Something went wrong while comparing segments: {e}"
+
+
+@mcp.tool()
+def get_anomalies(
+    posthog_api_key: str,
+    posthog_project_id: str,
+    stripe_api_key: str,
+    metric: str,
+    posthog_host: str = "https://app.posthog.com",
+    threshold: float = 1.5,
+    language: str = "auto",
+) -> str:
+    """Detect unusual patterns in any metric. Flags spikes, drops, and unexpected changes."""
+    try:
+        ctx = AppContext.get(posthog_api_key, posthog_project_id, stripe_api_key, posthog_host)
+        data = ctx.pipeline.fetch_and_normalize()
+        trend_result = TrendAnalyzer().get_trend(
+            data.users, data.events, data.subscriptions, metric
+        )
+        # Filter anomalies by threshold sensitivity
+        all_anomalies = trend_result.get("anomalies", [])
+        filtered = [
+            a
+            for a in all_anomalies
+            if abs(a["actual"] - a["expected"]) / max(a["expected"], 1) >= threshold
+        ]
+        anomaly_result = {
+            "metric": metric,
+            "anomalies": filtered,
+            "confidence": trend_result.get("confidence", "low"),
+        }
+        return ctx.translator.translate("anomaly", anomaly_result, language)
+    except Exception as e:
+        logger.exception("get_anomalies failed")
+        return f"Something went wrong while detecting anomalies: {e}"
 
 
 def main():
