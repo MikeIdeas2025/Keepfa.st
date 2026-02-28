@@ -1,0 +1,12 @@
+[
+  {"id": "cus_001", "email": "alice@example.com", "name": "Alice Builder", "created": 1733040000},
+  {"id": "cus_002", "email": "bob@example.com", "name": "Bob Vibecoder", "created": 1733212800},
+  {"id": "cus_003", "email": "carol@example.com", "name": "Carol Dev", "created": 1733385600},
+  {"id": "cus_004", "email": "dave@example.com", "name": "Dave Noob", "created": 1733817600},
+  {"id": "cus_005", "email": "eve@example.com", "name": "Eve Startup", "created": 1735776000},
+  {"id": "cus_006", "email": "frank@example.com", "name": "Frank Free", "created": 1736035200},
+  {"id": "cus_007", "email": "grace@example.com", "name": "Grace Growth", "created": 1736467200},
+  {"id": "cus_008", "email": "hank@example.com", "name": "Hank New", "created": 1738368000},
+  {"id": "cus_009", "email": "unknown@stripe.com", "name": "Stripe Only Customer", "created": 1738540800},
+  {"id": "cus_010", "email": null, "name": "No Email Customer", "created": 1738627200}
+]

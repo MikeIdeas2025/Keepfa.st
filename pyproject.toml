@@ -19,6 +19,9 @@ keepfast = "keepfast.server:main"
 [tool.hatch.build.targets.wheel]
 packages = ["src/keepfast"]
 
+[tool.hatch.build.targets.wheel.force-include]
+"src/keepfast/sandbox/fixtures" = "keepfast/sandbox/fixtures"
+
 [dependency-groups]
 dev = [
     "pytest>=8.0",

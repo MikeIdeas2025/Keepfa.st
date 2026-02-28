@@ -1,0 +1,12 @@
+[
+  {"distinct_ids": ["user_001"], "properties": {"email": "alice@example.com", "name": "Alice Builder"}, "created_at": "2025-12-01T10:00:00Z"},
+  {"distinct_ids": ["user_002"], "properties": {"email": "bob@example.com", "name": "Bob Vibecoder"}, "created_at": "2025-12-03T08:00:00Z"},
+  {"distinct_ids": ["user_003"], "properties": {"email": "carol@example.com", "name": "Carol Dev"}, "created_at": "2025-12-05T12:00:00Z"},
+  {"distinct_ids": ["user_004"], "properties": {"email": "dave@example.com", "name": "Dave Noob"}, "created_at": "2025-12-10T10:00:00Z"},
+  {"distinct_ids": ["user_005"], "properties": {"email": "eve@example.com", "name": "Eve Startup"}, "created_at": "2026-01-02T09:00:00Z"},
+  {"distinct_ids": ["user_006"], "properties": {"email": "frank@example.com", "name": "Frank Free"}, "created_at": "2026-01-05T11:00:00Z"},
+  {"distinct_ids": ["user_007"], "properties": {"email": "grace@example.com", "name": "Grace Growth"}, "created_at": "2026-01-10T14:00:00Z"},
+  {"distinct_ids": ["user_008"], "properties": {"email": "hank@example.com", "name": "Hank New"}, "created_at": "2026-02-01T10:00:00Z"},
+  {"distinct_ids": ["user_009"], "properties": {"name": "Ivan NoEmail"}, "created_at": "2026-02-05T12:00:00Z"},
+  {"distinct_ids": ["user_010"], "properties": {"email": "julia@other.com", "name": "Julia Unmatched"}, "created_at": "2026-02-10T09:00:00Z"}
+]
