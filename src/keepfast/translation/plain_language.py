@@ -16,6 +16,34 @@ class TranslationLayer:
         "sono",
         "nelle",
         "nella",
+        "miei",
+        "mio",
+        "mia",
+        "qual",
+        "più",
+        "adesso",
+        "sul",
+        "sui",
+        "sulle",
+        "quanto",
+        "quanti",
+        "dove",
+        "quale",
+        "chi",
+        "sta",
+        "stanno",
+        "il",
+        "la",
+        "le",
+        "gli",
+        "un",
+        "una",
+        "è",
+        "su",
+        "con",
+        "per",
+        "tra",
+        "fra",
     }
 
     def translate(
@@ -70,7 +98,7 @@ class TranslationLayer:
 
             if len(retention) >= 2:
                 m1_pct = retention[1]
-                ratio = self._pct_to_ratio(m1_pct)
+                ratio = self._pct_to_ratio(m1_pct, lang)
                 if lang == "it":
                     parts.append(
                         f"{name} ({size} utenti): {ratio} è tornato il mese dopo ({m1_pct}%)."
@@ -512,7 +540,9 @@ class TranslationLayer:
 
     # --- Helpers ---
 
-    def _pct_to_ratio(self, pct: int) -> str:
+    def _pct_to_ratio(self, pct: int, lang: str = "en") -> str:
+        if lang == "it":
+            return self._pct_to_ratio_it(pct)
         if pct <= 0:
             return "nobody"
         if pct >= 100:
@@ -536,6 +566,31 @@ class TranslationLayer:
         if pct <= 78:
             return "about 3 in 4"
         return "most"
+
+    def _pct_to_ratio_it(self, pct: int) -> str:
+        if pct <= 0:
+            return "nessuno"
+        if pct >= 100:
+            return "tutti"
+        if pct <= 12:
+            return "circa 1 su 10"
+        if pct <= 18:
+            return "circa 1 su 7"
+        if pct <= 22:
+            return "circa 1 su 5"
+        if pct <= 28:
+            return "circa 1 su 4"
+        if pct <= 38:
+            return "circa 1 su 3"
+        if pct <= 45:
+            return "circa 2 su 5"
+        if pct <= 55:
+            return "circa 1 su 2"
+        if pct <= 65:
+            return "circa 3 su 5"
+        if pct <= 78:
+            return "circa 3 su 4"
+        return "la maggior parte"
 
     def _confidence_disclaimer(self, confidence: str, n: int, lang: str) -> str:
         if confidence == "high":
