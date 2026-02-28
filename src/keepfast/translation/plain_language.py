@@ -18,9 +18,11 @@ class TranslationLayer:
         "nella",
     }
 
-    def translate(self, analysis_type: str, data: dict, language: str = "auto") -> str:
+    def translate(
+        self, analysis_type: str, data: dict, language: str = "auto", user_query: str = ""
+    ) -> str:
         if language == "auto":
-            language = "en"  # default
+            language = self.detect_language(user_query) if user_query else "en"
 
         dispatch = {
             "cohort": self._translate_cohort,

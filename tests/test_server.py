@@ -10,6 +10,7 @@ from keepfast.server import (
     get_cohort_retention,
     get_funnel_analysis,
     get_metric_trend,
+    get_omtm,
     lucrative_loyal_strategist,
     mcp,
     retention_journey_orchestrator,
@@ -17,7 +18,7 @@ from keepfast.server import (
 
 
 class TestToolRegistration:
-    def test_server_has_eight_tools(self):
+    def test_server_has_nine_tools(self):
         tools = mcp._tool_manager._tools
         tool_names = set(tools.keys())
         assert "customer_health_diagnostician" in tool_names
@@ -28,7 +29,8 @@ class TestToolRegistration:
         assert "get_metric_trend" in tool_names
         assert "compare_segments" in tool_names
         assert "get_anomalies" in tool_names
-        assert len(tool_names) == 8
+        assert "get_omtm" in tool_names
+        assert len(tool_names) == 9
 
     def test_server_name(self):
         assert mcp.name == "keepfast"
@@ -117,6 +119,16 @@ class TestToolErrorHandling:
                 posthog_project_id="bad",
                 stripe_api_key="bad",
                 metric="active_users",
+            )
+        assert isinstance(result, str)
+        assert "Something went wrong" in result
+
+    def test_omtm_tool_returns_string_on_error(self):
+        with patch.object(AppContext, "get", side_effect=Exception("connection failed")):
+            result = get_omtm(
+                posthog_api_key="bad",
+                posthog_project_id="bad",
+                stripe_api_key="bad",
             )
         assert isinstance(result, str)
         assert "Something went wrong" in result
@@ -229,6 +241,17 @@ class TestToolsReturnStrings:
         assert isinstance(result, str)
         assert result == "anomaly output"
 
+    def test_omtm_returns_string(self):
+        mock_ctx = _mock_ctx("omtm output")
+        with patch.object(AppContext, "get", return_value=mock_ctx):
+            result = get_omtm(
+                posthog_api_key="phx_test",
+                posthog_project_id="123",
+                stripe_api_key="sk_test",
+            )
+        assert isinstance(result, str)
+        assert result == "omtm output"
+
 
 class TestGetFunnelAnalysis:
     def test_steps_parsing(self):
@@ -325,3 +348,43 @@ class TestGetAnomalies:
                 translate_call = mock_ctx.translator.translate.call_args
                 anomaly_data = translate_call[0][1]
                 assert len(anomaly_data["anomalies"]) == 0
+
+
+class TestLanguageAutoDetect:
+    def test_user_query_forwarded_to_translator(self):
+        """Verify user_query is passed through to translate() for auto-detection."""
+        mock_ctx = _mock_ctx("output")
+        with patch.object(AppContext, "get", return_value=mock_ctx):
+            get_cohort_retention(
+                posthog_api_key="phx_test",
+                posthog_project_id="123",
+                stripe_api_key="sk_test",
+                user_query="come stanno i miei utenti della settimana scorsa?",
+            )
+            call_kwargs = mock_ctx.translator.translate.call_args
+            assert call_kwargs.kwargs["user_query"] == (
+                "come stanno i miei utenti della settimana scorsa?"
+            )
+
+    def test_empty_user_query_defaults_to_english(self):
+        """When no user_query is provided, translator should default to English."""
+        from keepfast.translation.plain_language import TranslationLayer
+
+        tl = TranslationLayer()
+        result = tl.translate("cohort", {"cohorts": []}, language="auto", user_query="")
+        # Zero-data English template
+        assert "I don't have" in result
+
+    def test_italian_user_query_triggers_italian(self):
+        """When user_query contains Italian, translator should respond in Italian."""
+        from keepfast.translation.plain_language import TranslationLayer
+
+        tl = TranslationLayer()
+        result = tl.translate(
+            "cohort",
+            {"cohorts": []},
+            language="auto",
+            user_query="come sono i dati della retention dei miei utenti?",
+        )
+        # Zero-data Italian template
+        assert "Non ho ancora" in result
